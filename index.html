@@ -1,0 +1,1292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>GameReviewd - Implementation Guide</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; color: #1a1a1a; max-width: 900px; margin: 0 auto; padding: 40px 30px; line-height: 1.6; }
+  h1 { font-size: 28px; margin-bottom: 8px; color: #0d47a1; }
+  h2 { font-size: 22px; margin-top: 40px; margin-bottom: 16px; color: #1565c0; border-bottom: 2px solid #e3f2fd; padding-bottom: 6px; }
+  h3 { font-size: 17px; margin-top: 24px; margin-bottom: 10px; color: #1976d2; }
+  p { margin-bottom: 12px; }
+  .subtitle { color: #666; font-size: 15px; margin-bottom: 30px; }
+  .step { background: #f8f9fa; border-left: 4px solid #1976d2; padding: 16px 20px; margin: 16px 0; border-radius: 0 6px 6px 0; }
+  .step-num { font-weight: bold; color: #1976d2; font-size: 14px; text-transform: uppercase; margin-bottom: 6px; }
+  .warn { background: #fff3e0; border-left-color: #f57c00; }
+  .warn .step-num { color: #e65100; }
+  .file-path { background: #e8eaf6; padding: 3px 8px; border-radius: 3px; font-family: 'Consolas', 'Courier New', monospace; font-size: 13px; color: #283593; }
+  pre { background: #263238; color: #eeffff; padding: 16px 20px; border-radius: 6px; margin: 12px 0 16px; overflow-x: auto; font-size: 13px; line-height: 1.5; white-space: pre-wrap; word-wrap: break-word; }
+  code { font-family: 'Consolas', 'Courier New', monospace; }
+  .inline-code { background: #eceff1; padding: 2px 6px; border-radius: 3px; font-size: 13px; }
+  .change-marker { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: bold; margin-right: 6px; }
+  .add { background: #e8f5e9; color: #2e7d32; }
+  .replace { background: #fff3e0; color: #e65100; }
+  .new-file { background: #e3f2fd; color: #1565c0; }
+  ul { margin: 8px 0 12px 24px; }
+  li { margin-bottom: 6px; }
+  hr { border: none; border-top: 1px solid #e0e0e0; margin: 30px 0; }
+  .toc { background: #f5f5f5; padding: 20px 24px; border-radius: 8px; margin: 20px 0 30px; }
+  .toc h3 { margin-top: 0; }
+  .toc ol { margin-left: 20px; }
+  .toc li { margin-bottom: 4px; }
+  .toc a { color: #1565c0; text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  @media print {
+    body { padding: 20px; }
+    pre { font-size: 11px; }
+    .step { break-inside: avoid; }
+    h2 { break-before: page; }
+  }
+</style>
+</head>
+<body>
+
+<h1>GameReviewd - Implementation Guide</h1>
+<p class="subtitle">Spring REST Docs + HATEOAS + Bug Fixes + GitHub Codespaces<br>Assignment deadline: March 18, 2025</p>
+
+<div class="toc">
+<h3>Table of Contents</h3>
+<ol>
+  <li><a href="#prereqs">Prerequisites</a></li>
+  <li><a href="#step1">Step 1: Fix application.properties (Database Config)</a></li>
+  <li><a href="#step2">Step 2: Fix Bug - GlobalControllerAdvice</a></li>
+  <li><a href="#step3">Step 3: Add Dependencies to pom.xml (HATEOAS + REST Docs)</a></li>
+  <li><a href="#step4">Step 4: Add Maven Plugins to pom.xml (AsciiDoctor)</a></li>
+  <li><a href="#step5">Step 5: Add HATEOAS to GameController</a></li>
+  <li><a href="#step6">Step 6: Update GameControllerTest (REST Docs)</a></li>
+  <li><a href="#step7">Step 7: Update UserControllerTest (REST Docs)</a></li>
+  <li><a href="#step8">Step 8: Update ReviewControllerTest (REST Docs)</a></li>
+  <li><a href="#step9">Step 9: Update CommentControllerTest (REST Docs)</a></li>
+  <li><a href="#step10">Step 10: Update StudioControllerTest (REST Docs)</a></li>
+  <li><a href="#step11">Step 11: Create index.adoc (Documentation Template)</a></li>
+  <li><a href="#step12">Step 12: Create devcontainer.json (GitHub Codespaces)</a></li>
+  <li><a href="#step13">Step 13: Run and Verify</a></li>
+</ol>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="prereqs">Prerequisites</h2>
+
+<p>Before starting, make sure you have:</p>
+<ul>
+  <li>IntelliJ IDEA with JDK 25 (or 24) configured</li>
+  <li>Docker Desktop running (for PostgreSQL via TestContainers)</li>
+  <li>The project open in IntelliJ and Maven dependencies loaded</li>
+</ul>
+
+<div class="step warn">
+  <div class="step-num">Important</div>
+  After each file change, IntelliJ will show a Maven reload prompt in the top-right corner. Click <strong>"Load Maven Changes"</strong> after editing pom.xml.
+</div>
+
+<!-- ============================================================ -->
+<h2 id="step1">Step 1: Fix application.properties</h2>
+
+<div class="step">
+  <div class="step-num"><span class="change-marker replace">Replace</span> Entire File</div>
+  <p>File: <span class="file-path">src/main/resources/application.properties</span></p>
+</div>
+
+<p>The original file only has the app name. Replace the <strong>entire content</strong> with:</p>
+
+<pre><code>spring.application.name=sj2526-pos1-java-seed
+spring.datasource.url=jdbc:postgresql://localhost:25432/pg2526_pos
+spring.datasource.username=owner
+spring.datasource.password=pwd
+spring.jpa.hibernate.ddl-auto=validate
+spring.flyway.enabled=true</code></pre>
+
+<p>This tells the app where to find the PostgreSQL database.</p>
+
+<!-- ============================================================ -->
+<h2 id="step2">Step 2: Fix Bug - GlobalControllerAdvice</h2>
+
+<div class="step">
+  <div class="step-num"><span class="change-marker replace">Replace</span> Entire File</div>
+  <p>File: <span class="file-path">src/main/java/.../presentation/api/GlobalControllerAdvice.java</span></p>
+</div>
+
+<p>Replace the <strong>entire file</strong> with:</p>
+
+<pre><code>package at.spengergasse.sj2526pos1javaseed.presentation.api;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ProblemDetail;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+
+@ControllerAdvice
+public class GlobalControllerAdvice {
+
+    @ExceptionHandler
+    public ResponseEntity&lt;ProblemDetail&gt; handleException(Throwable t) {
+        ProblemDetail problemDetail = ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR);
+        problemDetail.setDetail(t.getMessage());
+        return ResponseEntity.internalServerError().body(problemDetail);
+    }
+
+}</code></pre>
+
+<p><strong>What changed:</strong> The error detail now shows the actual exception message instead of a hardcoded joke string.</p>
+
+<!-- ============================================================ -->
+<h2 id="step3">Step 3: Add Dependencies to pom.xml</h2>
+
+<div class="step">
+  <div class="step-num"><span class="change-marker add">Add</span> Two Dependencies</div>
+  <p>File: <span class="file-path">pom.xml</span></p>
+</div>
+
+<p>Open <span class="inline-code">pom.xml</span> and find the <span class="inline-code">&lt;dependencies&gt;</span> section. Add these two blocks <strong>before</strong> the closing <span class="inline-code">&lt;/dependencies&gt;</span> tag:</p>
+
+<h3>3a. HATEOAS (for hypermedia links in API responses)</h3>
+<p>Find this line in your pom.xml:</p>
+<pre><code>&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-boot-starter-web&lt;/artifactId&gt;
+&lt;/dependency&gt;</code></pre>
+
+<p>Add <strong>right after it</strong>:</p>
+<pre><code>&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-boot-starter-hateoas&lt;/artifactId&gt;
+&lt;/dependency&gt;</code></pre>
+
+<h3>3b. Spring REST Docs MockMVC (for generating documentation from tests)</h3>
+<p>Find this line in your pom.xml:</p>
+<pre><code>&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-boot-starter-test&lt;/artifactId&gt;
+    &lt;scope&gt;test&lt;/scope&gt;
+&lt;/dependency&gt;</code></pre>
+
+<p>Add <strong>right after it</strong>:</p>
+<pre><code>&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework.restdocs&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-restdocs-mockmvc&lt;/artifactId&gt;
+    &lt;scope&gt;test&lt;/scope&gt;
+&lt;/dependency&gt;</code></pre>
+
+<div class="step warn">
+  <div class="step-num">After this step</div>
+  Click <strong>"Load Maven Changes"</strong> in IntelliJ (blue icon top-right) to download the new dependencies.
+</div>
+
+<!-- ============================================================ -->
+<h2 id="step4">Step 4: Add Maven Plugins to pom.xml</h2>
+
+<div class="step">
+  <div class="step-num"><span class="change-marker add">Add</span> Two Plugins</div>
+  <p>File: <span class="file-path">pom.xml</span></p>
+</div>
+
+<p>Find the <span class="inline-code">&lt;plugins&gt;</span> section inside <span class="inline-code">&lt;build&gt;</span>. After the existing <span class="inline-code">spring-boot-maven-plugin</span> block, add these two plugins:</p>
+
+<h3>4a. AsciiDoctor Maven Plugin (converts docs to HTML)</h3>
+<pre><code>&lt;plugin&gt;
+    &lt;groupId&gt;org.asciidoctor&lt;/groupId&gt;
+    &lt;artifactId&gt;asciidoctor-maven-plugin&lt;/artifactId&gt;
+    &lt;version&gt;2.2.6&lt;/version&gt;
+    &lt;executions&gt;
+        &lt;execution&gt;
+            &lt;id&gt;generate-docs&lt;/id&gt;
+            &lt;phase&gt;prepare-package&lt;/phase&gt;
+            &lt;goals&gt;
+                &lt;goal&gt;process-asciidoc&lt;/goal&gt;
+            &lt;/goals&gt;
+            &lt;configuration&gt;
+                &lt;backend&gt;html&lt;/backend&gt;
+                &lt;doctype&gt;book&lt;/doctype&gt;
+            &lt;/configuration&gt;
+        &lt;/execution&gt;
+    &lt;/executions&gt;
+    &lt;dependencies&gt;
+        &lt;dependency&gt;
+            &lt;groupId&gt;org.springframework.restdocs&lt;/groupId&gt;
+            &lt;artifactId&gt;spring-restdocs-asciidoctor&lt;/artifactId&gt;
+            &lt;version&gt;${spring-restdocs.version}&lt;/version&gt;
+        &lt;/dependency&gt;
+    &lt;/dependencies&gt;
+&lt;/plugin&gt;</code></pre>
+
+<h3>4b. Maven Resources Plugin (copies docs to static folder)</h3>
+<pre><code>&lt;plugin&gt;
+    &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+    &lt;artifactId&gt;maven-resources-plugin&lt;/artifactId&gt;
+    &lt;executions&gt;
+        &lt;execution&gt;
+            &lt;id&gt;copy-docs&lt;/id&gt;
+            &lt;phase&gt;prepare-package&lt;/phase&gt;
+            &lt;goals&gt;
+                &lt;goal&gt;copy-resources&lt;/goal&gt;
+            &lt;/goals&gt;
+            &lt;configuration&gt;
+                &lt;outputDirectory&gt;${project.build.outputDirectory}/static/docs&lt;/outputDirectory&gt;
+                &lt;resources&gt;
+                    &lt;resource&gt;
+                        &lt;directory&gt;${project.build.directory}/generated-docs&lt;/directory&gt;
+                    &lt;/resource&gt;
+                &lt;/resources&gt;
+            &lt;/configuration&gt;
+        &lt;/execution&gt;
+    &lt;/executions&gt;
+&lt;/plugin&gt;</code></pre>
+
+<p><strong>How it works:</strong> When you run <span class="inline-code">mvn package</span>, AsciiDoctor converts your .adoc file to HTML, and the resources plugin copies it into the JAR under /static/docs so it's accessible via the web server.</p>
+
+<!-- ============================================================ -->
+<h2 id="step5">Step 5: Add HATEOAS to GameController</h2>
+
+<div class="step">
+  <div class="step-num"><span class="change-marker replace">Replace</span> Entire File</div>
+  <p>File: <span class="file-path">src/main/java/.../presentation/api/GameController.java</span></p>
+</div>
+
+<p>Replace the <strong>entire file</strong> with:</p>
+
+<pre><code>package at.spengergasse.sj2526pos1javaseed.presentation.api;
+
+import at.spengergasse.sj2526pos1javaseed.commands.CreateGameCommand;
+import at.spengergasse.sj2526pos1javaseed.domain.Game;
+import at.spengergasse.sj2526pos1javaseed.dtos.GameDto;
+import at.spengergasse.sj2526pos1javaseed.service.GameService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.hateoas.EntityModel;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.*;
+
+import java.net.URI;
+
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.*;
+
+@RequiredArgsConstructor
+@Slf4j
+@RestController
+@RequestMapping("/api/games")
+public class GameController {
+
+    private final GameService gameService;
+
+    @GetMapping
+    public ResponseEntity&lt;Slice&lt;GameDto&gt;&gt; getGames(@PageableDefault(size = 10) Pageable pageable) {
+        log.info("GET /api/games");
+        var games = gameService.getGames(pageable);
+        log.info("GET /api/games -&gt; {} games", games.getNumberOfElements());
+        return (games.isEmpty()) ? ResponseEntity.noContent().build()
+                : ResponseEntity.ok(games);
+    }
+
+    @GetMapping("/{key}")
+    public ResponseEntity&lt;EntityModel&lt;GameDto&gt;&gt; getReview(@PathVariable Long key,
+                                                           @PageableDefault(size = 1) Pageable pageable) {
+        log.info("GET /api/games/{}", key);
+        var game = gameService.getGame(key, pageable);
+        if (game == null) {
+            return ResponseEntity.noContent().build();
+        }
+        EntityModel&lt;GameDto&gt; model = EntityModel.of(game,
+                linkTo(methodOn(GameController.class).getReview(key, pageable)).withSelfRel(),
+                linkTo(methodOn(GameController.class).getGames(pageable)).withRel("games"));
+        return ResponseEntity.ok(model);
+    }
+
+    @PostMapping
+    public ResponseEntity&lt;GameDto&gt; createReview(@RequestBody @Valid CreateGameCommand cmd,
+                                                 BindingResult bindingResult) {
+        log.info("POST /api/games - create game");
+        if (bindingResult.hasErrors()) { return ResponseEntity.badRequest().build(); }
+        var created = gameService.create(cmd);
+        return ResponseEntity.created(URI.create("/api/games/" + created.getId().id()))
+                .body(new GameDto(created));
+    }
+
+    @DeleteMapping("/{key}")
+    public ResponseEntity&lt;Void&gt; deleteGame(@PathVariable Long key) {
+        log.info("DELETE /api/games/{}", key);
+        return gameService.delete(new Game.GameId(key))
+                ? ResponseEntity.noContent().build()
+                : ResponseEntity.notFound().build();
+    }
+
+}</code></pre>
+
+<p><strong>What changed:</strong></p>
+<ul>
+  <li>The GET single game endpoint now returns <span class="inline-code">EntityModel&lt;GameDto&gt;</span> with HATEOAS links (self link + collection link)</li>
+  <li>Added imports for <span class="inline-code">EntityModel</span> and <span class="inline-code">WebMvcLinkBuilder</span></li>
+  <li>POST now uses the actual created entity ID in the Location header (was hardcoded to 1)</li>
+</ul>
+
+<div class="step">
+  <div class="step-num">What HATEOAS looks like in the response</div>
+  <p>When you GET /api/games/1, the response now includes:</p>
+</div>
+<pre><code>{
+  "name": "Zelda",
+  "description": "Adventure game",
+  "price": 60,
+  "_links": {
+    "self": { "href": "http://localhost:8080/api/games/1" },
+    "games": { "href": "http://localhost:8080/api/games" }
+  }
+}</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="step6">Step 6: Update GameControllerTest</h2>
+
+<div class="step">
+  <div class="step-num"><span class="change-marker replace">Replace</span> Entire File</div>
+  <p>File: <span class="file-path">src/test/java/.../presentation/api/GameControllerTest.java</span></p>
+</div>
+
+<pre><code>package at.spengergasse.sj2526pos1javaseed.presentation.api;
+
+import at.spengergasse.sj2526pos1javaseed.commands.CreateGameCommand;
+import at.spengergasse.sj2526pos1javaseed.domain.*;
+import at.spengergasse.sj2526pos1javaseed.dtos.GameDto;
+import at.spengergasse.sj2526pos1javaseed.service.GameService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.data.domain.SliceImpl;
+import org.springframework.restdocs.RestDocumentationExtension;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+
+import java.util.Collections;
+import java.util.List;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+@ExtendWith(RestDocumentationExtension.class)
+@AutoConfigureRestDocs(outputDir = "target/generated-snippets")
+@WebMvcTest(GameController.class)
+class GameControllerTest {
+
+    private @MockitoBean GameService gameService;
+    private @Autowired MockMvc mockMvc;
+    private @Autowired ObjectMapper objectMapper;
+
+    @Test
+    void can_fetch_existing_games() throws Exception {
+        var studio = Studio.builder().name("Studio 1").build();
+        var game = Game.builder().cover("cover.jpg").name("name").price(100)
+                .description("description").devStudio(studio).build();
+
+        when(gameService.getGames(any())).thenReturn(new SliceImpl&lt;&gt;(List.of(new GameDto(game))));
+
+        mockMvc.perform(get("/api/games").header("Accept", "application/json"))
+                .andDo(document("get-games"))
+                .andExpect(status().isOk())
+                .andDo(print());
+    }
+
+    @Test
+    void cant_fetch_non_existing_games() throws Exception {
+        when(gameService.getGames(any())).thenReturn(new SliceImpl&lt;&gt;(Collections.emptyList()));
+
+        mockMvc.perform(get("/api/games").header("Accept", "application/json"))
+                .andExpect(status().isNoContent())
+                .andDo(print());
+    }
+
+    @Test
+    void cant_create_game() throws Exception {
+        var studio = Studio.builder().name("Studio 1").build();
+        var game = Game.builder().id(new Game.GameId(1L)).cover("cover.jpg").name("name")
+                .price(100).description("description").devStudio(studio).build();
+
+        var cmd = CreateGameCommand.builder()
+                .cover("cover.jpg").name("name").price(100)
+                .description("description").devStudio_Id(studio.getId()).build();
+
+        when(gameService.create(any())).thenReturn(game);
+
+        mockMvc.perform(post("/api/games")
+                        .header("Accept", "application/json")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsBytes(cmd)))
+                .andDo(document("create-game"))
+                .andExpect(status().isCreated())
+                .andExpect(header().stringValues("Location", "/api/games/1"))
+                .andDo(print());
+    }
+
+    @Test
+    void can_fetch_existing_game() throws Exception {
+        var studio = Studio.builder().name("Studio 1").build();
+        var game = Game.builder().cover("cover.jpg").name("name").price(100)
+                .description("description").devStudio(studio).build();
+
+        when(gameService.getGame(any(), any())).thenReturn(new GameDto(game));
+
+        mockMvc.perform(get("/api/games/1").header("Accept", "application/json"))
+                .andDo(document("get-game"))
+                .andExpect(status().isOk())
+                .andDo(print());
+    }
+
+    @Test
+    void cant_fetch_non_existing_game() throws Exception {
+        when(gameService.getGame(any(), any())).thenReturn(null);
+
+        mockMvc.perform(get("/api/games/1").header("Accept", "application/json"))
+                .andExpect(status().isNoContent())
+                .andDo(print());
+    }
+
+    @Test
+    void can_delete_existing_game() throws Exception {
+        when(gameService.delete(any())).thenReturn(true);
+
+        mockMvc.perform(delete("/api/games/1"))
+                .andDo(document("delete-game"))
+                .andExpect(status().isNoContent())
+                .andDo(print());
+    }
+
+    @Test
+    void cant_delete_missing_game() throws Exception {
+        when(gameService.delete(any())).thenReturn(false);
+
+        mockMvc.perform(delete("/api/games/1"))
+                .andExpect(status().isNotFound())
+                .andDo(print());
+    }
+
+}</code></pre>
+
+<p><strong>What changed (same pattern for all test files):</strong></p>
+<ul>
+  <li>Added <span class="inline-code">@ExtendWith(RestDocumentationExtension.class)</span> at class level</li>
+  <li>Added <span class="inline-code">@AutoConfigureRestDocs(outputDir = "target/generated-snippets")</span> at class level</li>
+  <li>Added <span class="inline-code">.andDo(document("endpoint-name"))</span> to each happy-path test</li>
+  <li>Added imports for RestDocumentationExtension, AutoConfigureRestDocs, and document()</li>
+</ul>
+
+<!-- ============================================================ -->
+<h2 id="step7">Step 7: Update UserControllerTest</h2>
+
+<div class="step">
+  <div class="step-num"><span class="change-marker replace">Replace</span> Entire File</div>
+  <p>File: <span class="file-path">src/test/java/.../presentation/api/UserControllerTest.java</span></p>
+</div>
+
+<pre><code>package at.spengergasse.sj2526pos1javaseed.presentation.api;
+
+import at.spengergasse.sj2526pos1javaseed.commands.CreateUserCommand;
+import at.spengergasse.sj2526pos1javaseed.domain.Rank;
+import at.spengergasse.sj2526pos1javaseed.domain.User;
+import at.spengergasse.sj2526pos1javaseed.dtos.UserDto;
+import at.spengergasse.sj2526pos1javaseed.service.UserService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.data.domain.SliceImpl;
+import org.springframework.restdocs.RestDocumentationExtension;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+
+import java.util.Collections;
+import java.util.List;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+@ExtendWith(RestDocumentationExtension.class)
+@AutoConfigureRestDocs(outputDir = "target/generated-snippets")
+@WebMvcTest(UserController.class)
+class UserControllerTest {
+
+    private @MockitoBean UserService userService;
+    private @Autowired MockMvc mockMvc;
+    private @Autowired ObjectMapper objectMapper;
+
+    @Test
+    void can_fetch_existing_users() throws Exception {
+        var user = User.builder().username("abc123").age(18).email("abc@gmail.com")
+                .ratingRankVal(12).rank(Rank.BRONZE).build();
+        when(userService.getUsers(any())).thenReturn(new SliceImpl&lt;&gt;(List.of(new UserDto(user))));
+
+        mockMvc.perform(get("/api/users").header("Accept", "application/json"))
+                .andDo(document("get-users"))
+                .andExpect(status().isOk())
+                .andDo(print());
+    }
+
+    @Test
+    void cant_fetch_non_existing_users() throws Exception {
+        when(userService.getUsers(any())).thenReturn(new SliceImpl&lt;&gt;(Collections.emptyList()));
+
+        mockMvc.perform(get("/api/users").header("Accept", "application/json"))
+                .andExpect(status().isNoContent())
+                .andDo(print());
+    }
+
+    @Test
+    void can_create_user() throws Exception {
+        var user = User.builder().id(new User.UserId(1L)).username("abc123").age(18)
+                .email("abc@gmail.com").ratingRankVal(12).rank(Rank.BRONZE).build();
+
+        var cmd = CreateUserCommand.builder()
+                .username("abc123").age(18).email("abc@gmail.com")
+                .ratingRankVal(12).rank(Rank.BRONZE).build();
+
+        when(userService.create(any())).thenReturn(user);
+
+        mockMvc.perform(post("/api/users")
+                        .header("Accept", "application/json")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsBytes(cmd)))
+                .andDo(document("create-user"))
+                .andExpect(status().isCreated())
+                .andExpect(header().stringValues("Location", "/api/users/1"))
+                .andDo(print());
+    }
+
+    @Test
+    void can_fetch_existing_user() throws Exception {
+        var user = User.builder().username("abc123").age(18).email("abc@gmail.com")
+                .ratingRankVal(12).rank(Rank.BRONZE).build();
+        when(userService.getUser(any(), any())).thenReturn(new UserDto(user));
+
+        mockMvc.perform(get("/api/users/1").header("Accept", "application/json"))
+                .andDo(document("get-user"))
+                .andExpect(status().isOk())
+                .andDo(print());
+    }
+
+    @Test
+    void cant_fetch_non_existing_user() throws Exception {
+        when(userService.getUser(any(), any())).thenReturn(null);
+
+        mockMvc.perform(get("/api/users/1").header("Accept", "application/json"))
+                .andExpect(status().isNoContent())
+                .andDo(print());
+    }
+
+    @Test
+    void can_delete_existing_user() throws Exception {
+        when(userService.delete(any())).thenReturn(true);
+
+        mockMvc.perform(delete("/api/users/1"))
+                .andDo(document("delete-user"))
+                .andExpect(status().isNoContent())
+                .andDo(print());
+    }
+
+    @Test
+    void cant_delete_missing_user() throws Exception {
+        when(userService.delete(any())).thenReturn(false);
+
+        mockMvc.perform(delete("/api/users/1"))
+                .andExpect(status().isNotFound())
+                .andDo(print());
+    }
+
+    @Test
+    void can_add_favorite_game() throws Exception {
+        when(userService.addGameToFavorites(any(User.UserId.class), any())).thenReturn(true);
+
+        mockMvc.perform(post("/api/users/1/favGames/2")
+                        .header("Accept", "application/json"))
+                .andExpect(status().isNoContent())
+                .andDo(print());
+    }
+
+    @Test
+    void cant_add_favorite_game_when_user_or_game_missing() throws Exception {
+        when(userService.addGameToFavorites(any(User.UserId.class), any())).thenReturn(false);
+
+        mockMvc.perform(post("/api/users/1/favGames/2")
+                        .header("Accept", "application/json"))
+                .andExpect(status().isNotFound())
+                .andDo(print());
+    }
+
+}</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="step8">Step 8: Update ReviewControllerTest</h2>
+
+<div class="step">
+  <div class="step-num"><span class="change-marker replace">Replace</span> Entire File</div>
+  <p>File: <span class="file-path">src/test/java/.../presentation/api/ReviewControllerTest.java</span></p>
+</div>
+
+<pre><code>package at.spengergasse.sj2526pos1javaseed.presentation.api;
+
+import at.spengergasse.sj2526pos1javaseed.commands.CreateReviewCommand;
+import at.spengergasse.sj2526pos1javaseed.domain.*;
+import at.spengergasse.sj2526pos1javaseed.dtos.ReviewDto;
+import at.spengergasse.sj2526pos1javaseed.richtypes.Rating;
+import at.spengergasse.sj2526pos1javaseed.service.ReviewService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.data.domain.SliceImpl;
+import org.springframework.restdocs.RestDocumentationExtension;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+
+import java.util.Collections;
+import java.util.List;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+@ExtendWith(RestDocumentationExtension.class)
+@AutoConfigureRestDocs(outputDir = "target/generated-snippets")
+@WebMvcTest(ReviewController.class)
+class ReviewControllerTest {
+
+    private @MockitoBean ReviewService reviewService;
+    private @Autowired MockMvc mockMvc;
+    private @Autowired ObjectMapper objectMapper;
+
+    @Test
+    void can_fetch_existing_reviews() throws Exception {
+        var user = User.builder().username("reviewUser").age(27).ratingRankVal(85)
+                .rank(Rank.GOLD).email("reviewer@gmail.com").build();
+        var game = Game.builder().cover("cover.jpg").description("Description")
+                .name("reviewGame").price(150).build();
+        var review = Review.builder().title("title").description("description")
+                .like(10).dislike(12).rating(new Rating(8)).user(user).game(game).build();
+
+        when(reviewService.getReviews(any())).thenReturn(new SliceImpl&lt;&gt;(List.of(new ReviewDto(review))));
+
+        mockMvc.perform(get("/api/reviews").header("Accept", "application/json"))
+                .andDo(document("get-reviews"))
+                .andExpect(status().isOk())
+                .andDo(print());
+    }
+
+    @Test
+    void cant_fetch_non_existing_reviews() throws Exception {
+        when(reviewService.getReviews(any())).thenReturn(new SliceImpl&lt;&gt;(Collections.emptyList()));
+
+        mockMvc.perform(get("/api/reviews").header("Accept", "application/json"))
+                .andExpect(status().isNoContent())
+                .andDo(print());
+    }
+
+    @Test
+    void cant_create_review() throws Exception {
+        var user = User.builder().username("reviewUser").age(27).ratingRankVal(85)
+                .rank(Rank.GOLD).email("reviewer@gmail.com").build();
+        var game = Game.builder().cover("cover.jpg").description("Description")
+                .name("reviewGame").price(150).build();
+        var review = Review.builder().id(new Review.ReviewId(1L)).title("title")
+                .description("description").like(10).dislike(12).rating(new Rating(8))
+                .user(user).game(game).build();
+
+        var cmd = CreateReviewCommand.builder()
+                .title("title").description("description").like(10).dislike(12)
+                .rating(new Rating(8)).gameId(game.getId()).userId(user.getId()).build();
+
+        when(reviewService.create(any())).thenReturn(review);
+
+        mockMvc.perform(post("/api/reviews")
+                        .header("Accept", "application/json")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsBytes(cmd)))
+                .andDo(document("create-review"))
+                .andExpect(status().isCreated())
+                .andExpect(header().stringValues("Location", "/api/reviews/1"))
+                .andDo(print());
+    }
+
+    @Test
+    void can_fetch_existing_review() throws Exception {
+        var user = User.builder().username("reviewUser").age(27).ratingRankVal(85)
+                .rank(Rank.GOLD).email("reviewer@gmail.com").build();
+        var game = Game.builder().cover("cover.jpg").description("Description")
+                .name("reviewGame").price(150).build();
+        var review = Review.builder().title("title").description("description")
+                .like(10).dislike(12).rating(new Rating(8)).user(user).game(game).build();
+
+        when(reviewService.getReview(any(), any())).thenReturn(new ReviewDto(review));
+
+        mockMvc.perform(get("/api/reviews/1").header("Accept", "application/json"))
+                .andDo(document("get-review"))
+                .andExpect(status().isOk())
+                .andDo(print());
+    }
+
+    @Test
+    void cant_fetch_non_existing_review() throws Exception {
+        when(reviewService.getReview(any(), any())).thenReturn(null);
+
+        mockMvc.perform(get("/api/reviews/1").header("Accept", "application/json"))
+                .andExpect(status().isNoContent())
+                .andDo(print());
+    }
+
+    @Test
+    void can_delete_existing_review() throws Exception {
+        when(reviewService.delete(any())).thenReturn(true);
+
+        mockMvc.perform(delete("/api/reviews/1"))
+                .andDo(document("delete-review"))
+                .andExpect(status().isNoContent())
+                .andDo(print());
+    }
+
+    @Test
+    void cant_delete_missing_review() throws Exception {
+        when(reviewService.delete(any())).thenReturn(false);
+
+        mockMvc.perform(delete("/api/reviews/1"))
+                .andExpect(status().isNotFound())
+                .andDo(print());
+    }
+
+}</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="step9">Step 9: Update CommentControllerTest</h2>
+
+<div class="step">
+  <div class="step-num"><span class="change-marker replace">Replace</span> Entire File</div>
+  <p>File: <span class="file-path">src/test/java/.../presentation/api/CommentControllerTest.java</span></p>
+</div>
+
+<pre><code>package at.spengergasse.sj2526pos1javaseed.presentation.api;
+
+import at.spengergasse.sj2526pos1javaseed.commands.CreateCommentCommand;
+import at.spengergasse.sj2526pos1javaseed.domain.*;
+import at.spengergasse.sj2526pos1javaseed.dtos.CommentDto;
+import at.spengergasse.sj2526pos1javaseed.richtypes.Rating;
+import at.spengergasse.sj2526pos1javaseed.service.CommentService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.data.domain.SliceImpl;
+import org.springframework.restdocs.RestDocumentationExtension;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+
+import java.util.Collections;
+import java.util.List;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+@ExtendWith(RestDocumentationExtension.class)
+@AutoConfigureRestDocs(outputDir = "target/generated-snippets")
+@WebMvcTest(CommentController.class)
+class CommentControllerTest {
+
+    private @MockitoBean CommentService commentService;
+    private @Autowired MockMvc mockMvc;
+    private @Autowired ObjectMapper objectMapper;
+
+    @Test
+    void can_fetch_existing_comments() throws Exception {
+        var user = User.builder().username("commenter").age(21)
+                .email("commenter@example.com").ratingRankVal(120).rank(Rank.BRONZE).build();
+        var game = Game.builder().name("Game").description("A game")
+                .cover("cover.jpg").price(100).build();
+        var review = Review.builder().title("Review").description("A review")
+                .like(5).dislike(1).rating(new Rating(7)).user(user).game(game).build();
+        var comment = Comment.builder().likes(3).dislikes(0)
+                .description("Great review!").review(review).build();
+
+        when(commentService.getComments(any())).thenReturn(new SliceImpl&lt;&gt;(List.of(new CommentDto(comment))));
+
+        mockMvc.perform(get("/api/comments").header("Accept", "application/json"))
+                .andDo(document("get-comments"))
+                .andExpect(status().isOk())
+                .andDo(print());
+    }
+
+    @Test
+    void cant_fetch_non_existing_comments() throws Exception {
+        when(commentService.getComments(any())).thenReturn(new SliceImpl&lt;&gt;(Collections.emptyList()));
+
+        mockMvc.perform(get("/api/comments").header("Accept", "application/json"))
+                .andExpect(status().isNoContent())
+                .andDo(print());
+    }
+
+    @Test
+    void cant_create_comment() throws Exception {
+        var user = User.builder().username("commenter").age(21)
+                .email("commenter@example.com").ratingRankVal(120).rank(Rank.BRONZE).build();
+        var game = Game.builder().name("Game").description("A game")
+                .cover("cover.jpg").price(100).build();
+        var review = Review.builder().title("Review").description("A review")
+                .like(5).dislike(1).rating(new Rating(7)).user(user).game(game).build();
+        var comment = Comment.builder().id(new Comment.CommentId(1L)).likes(3)
+                .dislikes(0).description("Great review!").review(review).build();
+
+        var cmd = CreateCommentCommand.builder().likes(3).dislikes(0)
+                .description("Great review!").reviewId(review.getId()).build();
+
+        when(commentService.create(any())).thenReturn(comment);
+
+        mockMvc.perform(post("/api/comments")
+                        .header("Accept", "application/json")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsBytes(cmd)))
+                .andDo(document("create-comment"))
+                .andExpect(status().isCreated())
+                .andExpect(header().stringValues("Location", "/api/comments/1"))
+                .andDo(print());
+    }
+
+    @Test
+    void can_fetch_existing_comment() throws Exception {
+        var user = User.builder().username("commenter").age(21)
+                .email("commenter@example.com").ratingRankVal(120).rank(Rank.BRONZE).build();
+        var game = Game.builder().name("Game").description("A game")
+                .cover("cover.jpg").price(100).build();
+        var review = Review.builder().title("Review").description("A review")
+                .like(5).dislike(1).rating(new Rating(7)).user(user).game(game).build();
+        var comment = Comment.builder().likes(3).dislikes(0)
+                .description("Great review!").review(review).build();
+
+        when(commentService.getComment(any(), any())).thenReturn(new CommentDto(comment));
+
+        mockMvc.perform(get("/api/comments/1").header("Accept", "application/json"))
+                .andDo(document("get-comment"))
+                .andExpect(status().isOk())
+                .andDo(print());
+    }
+
+    @Test
+    void cant_fetch_non_existing_comment() throws Exception {
+        when(commentService.getComment(any(), any())).thenReturn(null);
+
+        mockMvc.perform(get("/api/comments/1").header("Accept", "application/json"))
+                .andExpect(status().isNoContent())
+                .andDo(print());
+    }
+
+    @Test
+    void can_delete_existing_comment() throws Exception {
+        when(commentService.delete(any())).thenReturn(true);
+
+        mockMvc.perform(delete("/api/comments/1"))
+                .andDo(document("delete-comment"))
+                .andExpect(status().isNoContent())
+                .andDo(print());
+    }
+
+    @Test
+    void cant_delete_missing_comment() throws Exception {
+        when(commentService.delete(any())).thenReturn(false);
+
+        mockMvc.perform(delete("/api/comments/1"))
+                .andExpect(status().isNotFound())
+                .andDo(print());
+    }
+
+}</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="step10">Step 10: Update StudioControllerTest</h2>
+
+<div class="step">
+  <div class="step-num"><span class="change-marker replace">Replace</span> Entire File</div>
+  <p>File: <span class="file-path">src/test/java/.../presentation/api/StudioControllerTest.java</span></p>
+</div>
+
+<pre><code>package at.spengergasse.sj2526pos1javaseed.presentation.api;
+
+import at.spengergasse.sj2526pos1javaseed.commands.CreateStudioCommand;
+import at.spengergasse.sj2526pos1javaseed.domain.Studio;
+import at.spengergasse.sj2526pos1javaseed.dtos.StudioDto;
+import at.spengergasse.sj2526pos1javaseed.service.StudioService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.data.domain.SliceImpl;
+import org.springframework.restdocs.RestDocumentationExtension;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+
+import java.util.Collections;
+import java.util.List;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+@ExtendWith(RestDocumentationExtension.class)
+@AutoConfigureRestDocs(outputDir = "target/generated-snippets")
+@WebMvcTest(StudioController.class)
+class StudioControllerTest {
+
+    private @MockitoBean StudioService studioService;
+    private @Autowired MockMvc mockMvc;
+    private @Autowired ObjectMapper objectMapper;
+
+    @Test
+    void can_fetch_existing_studios() throws Exception {
+        var studio = Studio.builder().name("Studio 1").build();
+
+        when(studioService.getStudios(any())).thenReturn(new SliceImpl&lt;&gt;(List.of(new StudioDto(studio))));
+
+        mockMvc.perform(get("/api/studios").header("Accept", "application/json"))
+                .andDo(document("get-studios"))
+                .andExpect(status().isOk())
+                .andDo(print());
+    }
+
+    @Test
+    void cant_fetch_non_existing_studios() throws Exception {
+        when(studioService.getStudios(any())).thenReturn(new SliceImpl&lt;&gt;(Collections.emptyList()));
+
+        mockMvc.perform(get("/api/studios").header("Accept", "application/json"))
+                .andExpect(status().isNoContent())
+                .andDo(print());
+    }
+
+    @Test
+    void cant_create_studio() throws Exception {
+        var studio = Studio.builder().id(new Studio.StudioId(1L)).name("Studio 1").build();
+
+        var cmd = CreateStudioCommand.builder().name("Studio 1").build();
+
+        when(studioService.create(any())).thenReturn(studio);
+
+        mockMvc.perform(post("/api/studios")
+                        .header("Accept", "application/json")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsBytes(cmd)))
+                .andDo(document("create-studio"))
+                .andExpect(status().isCreated())
+                .andExpect(header().stringValues("Location", "/api/studios/1"))
+                .andDo(print());
+    }
+
+    @Test
+    void can_fetch_existing_studio() throws Exception {
+        var studio = Studio.builder().name("Studio 1").build();
+        when(studioService.getStudio(any(), any())).thenReturn(new StudioDto(studio));
+
+        mockMvc.perform(get("/api/studios/1").header("Accept", "application/json"))
+                .andDo(document("get-studio"))
+                .andExpect(status().isOk())
+                .andDo(print());
+    }
+
+    @Test
+    void cant_fetch_non_existing_studio() throws Exception {
+        when(studioService.getStudio(any(), any())).thenReturn(null);
+
+        mockMvc.perform(get("/api/studios/1").header("Accept", "application/json"))
+                .andExpect(status().isNoContent())
+                .andDo(print());
+    }
+
+    @Test
+    void can_delete_existing_studio() throws Exception {
+        when(studioService.delete(any())).thenReturn(true);
+
+        mockMvc.perform(delete("/api/studios/1"))
+                .andDo(document("delete-studio"))
+                .andExpect(status().isNoContent())
+                .andDo(print());
+    }
+
+    @Test
+    void cant_delete_missing_studio() throws Exception {
+        when(studioService.delete(any())).thenReturn(false);
+
+        mockMvc.perform(delete("/api/studios/1"))
+                .andExpect(status().isNotFound())
+                .andDo(print());
+    }
+
+}</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="step11">Step 11: Create index.adoc</h2>
+
+<div class="step">
+  <div class="step-num"><span class="change-marker new-file">New File</span></div>
+  <p>Create folder: <span class="file-path">src/docs/asciidoc/</span></p>
+  <p>Create file: <span class="file-path">src/docs/asciidoc/index.adoc</span></p>
+</div>
+
+<p>In IntelliJ: right-click <span class="inline-code">src</span> folder &rarr; New &rarr; Directory &rarr; type <span class="inline-code">docs/asciidoc</span>. Then right-click the new folder &rarr; New &rarr; File &rarr; <span class="inline-code">index.adoc</span>.</p>
+
+<p>Paste this content:</p>
+
+<pre><code>= GameReviewd API Documentation
+:doctype: book
+:toc: left
+:toclevels: 3
+:sectlinks:
+
+== Introduction
+
+REST API documentation for the GameReviewd platform.
+
+== Games
+
+=== List Games
+
+include::{snippets}/get-games/curl-request.adoc[]
+include::{snippets}/get-games/http-response.adoc[]
+
+=== Get Game
+
+include::{snippets}/get-game/curl-request.adoc[]
+include::{snippets}/get-game/http-response.adoc[]
+
+=== Create Game
+
+include::{snippets}/create-game/curl-request.adoc[]
+include::{snippets}/create-game/http-response.adoc[]
+
+=== Delete Game
+
+include::{snippets}/delete-game/curl-request.adoc[]
+include::{snippets}/delete-game/http-response.adoc[]
+
+== Reviews
+
+=== List Reviews
+
+include::{snippets}/get-reviews/curl-request.adoc[]
+include::{snippets}/get-reviews/http-response.adoc[]
+
+=== Get Review
+
+include::{snippets}/get-review/curl-request.adoc[]
+include::{snippets}/get-review/http-response.adoc[]
+
+=== Create Review
+
+include::{snippets}/create-review/curl-request.adoc[]
+include::{snippets}/create-review/http-response.adoc[]
+
+=== Delete Review
+
+include::{snippets}/delete-review/curl-request.adoc[]
+include::{snippets}/delete-review/http-response.adoc[]
+
+== Users
+
+=== List Users
+
+include::{snippets}/get-users/curl-request.adoc[]
+include::{snippets}/get-users/http-response.adoc[]
+
+=== Get User
+
+include::{snippets}/get-user/curl-request.adoc[]
+include::{snippets}/get-user/http-response.adoc[]
+
+=== Create User
+
+include::{snippets}/create-user/curl-request.adoc[]
+include::{snippets}/create-user/http-response.adoc[]
+
+=== Delete User
+
+include::{snippets}/delete-user/curl-request.adoc[]
+include::{snippets}/delete-user/http-response.adoc[]
+
+== Comments
+
+=== List Comments
+
+include::{snippets}/get-comments/curl-request.adoc[]
+include::{snippets}/get-comments/http-response.adoc[]
+
+=== Get Comment
+
+include::{snippets}/get-comment/curl-request.adoc[]
+include::{snippets}/get-comment/http-response.adoc[]
+
+=== Create Comment
+
+include::{snippets}/create-comment/curl-request.adoc[]
+include::{snippets}/create-comment/http-response.adoc[]
+
+=== Delete Comment
+
+include::{snippets}/delete-comment/curl-request.adoc[]
+include::{snippets}/delete-comment/http-response.adoc[]
+
+== Studios
+
+=== List Studios
+
+include::{snippets}/get-studios/curl-request.adoc[]
+include::{snippets}/get-studios/http-response.adoc[]
+
+=== Get Studio
+
+include::{snippets}/get-studio/curl-request.adoc[]
+include::{snippets}/get-studio/http-response.adoc[]
+
+=== Create Studio
+
+include::{snippets}/create-studio/curl-request.adoc[]
+include::{snippets}/create-studio/http-response.adoc[]
+
+=== Delete Studio
+
+include::{snippets}/delete-studio/curl-request.adoc[]
+include::{snippets}/delete-studio/http-response.adoc[]</code></pre>
+
+<p><strong>How it works:</strong> When tests run, they generate snippet files (curl examples, HTTP responses) in <span class="inline-code">target/generated-snippets/</span>. This file assembles those snippets into one HTML page. The <span class="inline-code">{snippets}</span> variable is set automatically by the AsciiDoctor plugin.</p>
+
+<!-- ============================================================ -->
+<h2 id="step12">Step 12: Create devcontainer.json (GitHub Codespaces)</h2>
+
+<div class="step">
+  <div class="step-num"><span class="change-marker new-file">New File</span></div>
+  <p>Create folder: <span class="file-path">.devcontainer/</span> (in project root)</p>
+  <p>Create file: <span class="file-path">.devcontainer/devcontainer.json</span></p>
+</div>
+
+<p>In IntelliJ: right-click the project root &rarr; New &rarr; Directory &rarr; type <span class="inline-code">.devcontainer</span>. Then right-click &rarr; New &rarr; File &rarr; <span class="inline-code">devcontainer.json</span>.</p>
+
+<pre><code>{
+  "name": "GameReviewd",
+  "image": "mcr.microsoft.com/devcontainers/java:25",
+  "features": {
+    "ghcr.io/devcontainers/features/java:1": {
+      "version": "25",
+      "installMaven": "true"
+    }
+  },
+  "services": {
+    "db": {
+      "image": "postgres:17.6-alpine",
+      "restart": "unless-stopped",
+      "environment": {
+        "POSTGRES_USER": "owner",
+        "POSTGRES_PASSWORD": "pwd",
+        "POSTGRES_DB": "pg2526_pos"
+      },
+      "ports": ["25432:5432"]
+    }
+  },
+  "forwardPorts": [8080, 25432],
+  "postCreateCommand": "mvn clean install -DskipTests",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "vscjava.vscode-java-pack",
+        "vscjava.vscode-spring-boot-extension-pack"
+      ]
+    }
+  }
+}</code></pre>
+
+<p><strong>What this does:</strong> When you open a GitHub Codespace from this repo, it automatically installs Java 25, Maven, starts a PostgreSQL database, and downloads all Maven dependencies. Just click "Create codespace" on GitHub and everything is ready.</p>
+
+<!-- ============================================================ -->
+<h2 id="step13">Step 13: Run and Verify</h2>
+
+<h3>Run tests locally</h3>
+<p>In IntelliJ: right-click the <span class="inline-code">src/test</span> folder &rarr; Run All Tests</p>
+<p>Or from terminal:</p>
+<pre><code>mvn clean test</code></pre>
+
+<p>After tests pass, check that snippet files were generated:</p>
+<pre><code>target/generated-snippets/
+  get-games/
+    curl-request.adoc
+    http-response.adoc
+    ...
+  create-game/
+    ...
+  get-users/
+    ...</code></pre>
+
+<h3>Build the documentation</h3>
+<pre><code>mvn clean package</code></pre>
+
+<p>This runs tests, generates snippets, converts AsciiDoc to HTML, and copies to the JAR. The docs will be at:</p>
+<pre><code>target/classes/static/docs/index.html</code></pre>
+
+<h3>Run the app and view docs</h3>
+<pre><code>mvn spring-boot:run</code></pre>
+
+<p>Open browser: <span class="inline-code">http://localhost:8080/docs/index.html</span></p>
+
+<h3>Test HATEOAS</h3>
+<p>Open browser: <span class="inline-code">http://localhost:8080/api/games/1</span></p>
+<p>You should see <span class="inline-code">_links</span> in the JSON response with self and collection links.</p>
+
+<hr>
+
+<h2>Summary of All Changes</h2>
+
+<table style="width:100%; border-collapse: collapse; margin-top: 16px;">
+  <tr style="background: #e3f2fd;">
+    <th style="padding: 8px 12px; text-align: left; border: 1px solid #ccc;">File</th>
+    <th style="padding: 8px 12px; text-align: left; border: 1px solid #ccc;">Action</th>
+    <th style="padding: 8px 12px; text-align: left; border: 1px solid #ccc;">What</th>
+  </tr>
+  <tr><td style="padding:6px 12px; border:1px solid #ddd;">application.properties</td><td style="padding:6px 12px; border:1px solid #ddd;">Replace</td><td style="padding:6px 12px; border:1px solid #ddd;">Add database connection config</td></tr>
+  <tr><td style="padding:6px 12px; border:1px solid #ddd;">GlobalControllerAdvice.java</td><td style="padding:6px 12px; border:1px solid #ddd;">Replace</td><td style="padding:6px 12px; border:1px solid #ddd;">Fix error message bug</td></tr>
+  <tr><td style="padding:6px 12px; border:1px solid #ddd;">pom.xml</td><td style="padding:6px 12px; border:1px solid #ddd;">Add</td><td style="padding:6px 12px; border:1px solid #ddd;">HATEOAS + REST Docs deps + plugins</td></tr>
+  <tr><td style="padding:6px 12px; border:1px solid #ddd;">GameController.java</td><td style="padding:6px 12px; border:1px solid #ddd;">Replace</td><td style="padding:6px 12px; border:1px solid #ddd;">HATEOAS links + fix Location header</td></tr>
+  <tr><td style="padding:6px 12px; border:1px solid #ddd;">GameControllerTest.java</td><td style="padding:6px 12px; border:1px solid #ddd;">Replace</td><td style="padding:6px 12px; border:1px solid #ddd;">REST Docs annotations + document()</td></tr>
+  <tr><td style="padding:6px 12px; border:1px solid #ddd;">UserControllerTest.java</td><td style="padding:6px 12px; border:1px solid #ddd;">Replace</td><td style="padding:6px 12px; border:1px solid #ddd;">REST Docs annotations + document()</td></tr>
+  <tr><td style="padding:6px 12px; border:1px solid #ddd;">ReviewControllerTest.java</td><td style="padding:6px 12px; border:1px solid #ddd;">Replace</td><td style="padding:6px 12px; border:1px solid #ddd;">REST Docs annotations + document()</td></tr>
+  <tr><td style="padding:6px 12px; border:1px solid #ddd;">CommentControllerTest.java</td><td style="padding:6px 12px; border:1px solid #ddd;">Replace</td><td style="padding:6px 12px; border:1px solid #ddd;">REST Docs annotations + document()</td></tr>
+  <tr><td style="padding:6px 12px; border:1px solid #ddd;">StudioControllerTest.java</td><td style="padding:6px 12px; border:1px solid #ddd;">Replace</td><td style="padding:6px 12px; border:1px solid #ddd;">REST Docs annotations + document()</td></tr>
+  <tr><td style="padding:6px 12px; border:1px solid #ddd;">src/docs/asciidoc/index.adoc</td><td style="padding:6px 12px; border:1px solid #ddd;">New file</td><td style="padding:6px 12px; border:1px solid #ddd;">Documentation template</td></tr>
+  <tr><td style="padding:6px 12px; border:1px solid #ddd;">.devcontainer/devcontainer.json</td><td style="padding:6px 12px; border:1px solid #ddd;">New file</td><td style="padding:6px 12px; border:1px solid #ddd;">GitHub Codespaces config</td></tr>
+</table>
+
+</body>
+</html>
